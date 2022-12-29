@@ -111,9 +111,16 @@ class CameraScanner(private val builder: Builder) {
                             flashLive.observe(activity) {
                                 camera.cameraControl.enableTorch(it)
                             }
+                        } else {
+                            Toast.makeText(
+                                activity,
+                                "Terjadi kesalahan pada flash anda",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }, ContextCompat.getMainExecutor(activity))
                 } catch (exc: Exception) {
+                    builder.myErrorListener.invoke(exc)
                     Toast.makeText(
                         activity, "Failed open camera", Toast.LENGTH_SHORT
                     ).show()
