@@ -11,9 +11,17 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
 
 
 class CameraScanner(private val builder: Builder) {
+    private val flashLive = MutableLiveData(false)
+    fun setFlash(isFlashOn: Boolean) {
+        flashLive.value = isFlashOn
+    }
+
+    val isFlashOn get() = flashLive.value ?: false
+
     class Builder(activity: AppCompatActivity) {
         var myCameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             private set
@@ -96,9 +104,14 @@ class CameraScanner(private val builder: Builder) {
                     cameraProviderFuture.addListener({
                         val cameraProvider = cameraProviderFuture.get()
                         cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
+                        val camera = cameraProvider.bindToLifecycle(
                             activity, builder.myCameraSelector, preview, imageAnalyzer
                         )
+                        if (camera.cameraInfo.hasFlashUnit()) {
+                            flashLive.observe(activity) {
+                                camera.cameraControl.enableTorch(it)
+                            }
+                        }
                     }, ContextCompat.getMainExecutor(activity))
                 } catch (exc: Exception) {
                     Toast.makeText(

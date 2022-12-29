@@ -14,15 +14,18 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        showCamera()
-    }
-
-    private fun showCamera() {
-        CameraScanner.Builder(this).addOnSuccessListener {
+        val cameraScanner = CameraScanner.Builder(this).addOnSuccessListener {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }.addOnFailureListener {
             Log.e("Error", it.message.toString())
         }.showCamera(binding.preview)
+
+        binding.btnFlash.setOnClickListener {
+            cameraScanner.setFlash(!cameraScanner.isFlashOn)
+        }
+    }
+
+    private fun showCamera() {
 //        binding.preview.showCamera(this)
     }
 }
