@@ -10,6 +10,7 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 
@@ -31,6 +32,8 @@ class CameraScanner(private val builder: Builder) {
             private set
         var myErrorListener: (Exception) -> Unit = {}
             private set
+        var myErrorPermissionListener: (Exception) -> Unit = {}
+            private set
 
         init {
             myActivity = activity
@@ -42,6 +45,10 @@ class CameraScanner(private val builder: Builder) {
 
         fun addOnFailureListener(listener: (Exception) -> Unit) = apply {
             myErrorListener = listener
+        }
+
+        fun addOnPermissionFailureListener(listener: (Exception) -> Unit) = apply {
+            myErrorPermissionListener = listener
         }
 
         fun setCameraSelector(cameraSelector: CameraSelector) = apply {
@@ -73,7 +80,7 @@ class CameraScanner(private val builder: Builder) {
                                 "Camera Cannot be open because you don't allow permission",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            builder.myErrorListener.invoke(Exception("Camera Cannot be open because you don't allow permission"))
+                            builder.myErrorPermissionListener.invoke(Exception("Camera Cannot be open because you don't allow permission"))
                         }
                     }?.launch(
                         Manifest.permission.CAMERA

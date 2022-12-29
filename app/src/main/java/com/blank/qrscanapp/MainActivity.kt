@@ -18,6 +18,8 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         }.addOnFailureListener {
             Log.e("Error", it.message.toString())
+        }.addOnPermissionFailureListener {
+
         }.showCamera(binding.preview)
 
         binding.btnFlash.setOnClickListener {
