@@ -1,6 +1,9 @@
 package com.blank.qrscanapp
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -42,34 +45,66 @@ class CameraScanner(private val builder: Builder) {
         }
     }
 
-    private fun showCamera(previewView: PreviewView) {
-        builder.myActivity?.let { activity ->
-            val preview =
-                Preview.Builder().build().apply { setSurfaceProvider(previewView.surfaceProvider) }
-
-            val cameraExecutor = ContextCompat.getMainExecutor(activity)
-
-            val imageAnalyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build().also {
-                    it.setAnalyzer(
-                        cameraExecutor,
-                        QrCodeAnalyzer(builder.mySuccessListener, builder.myErrorListener)
+    private fun havePermission(successAccessPermission: () -> Unit) {
+        builder.myActivity?.let {
+            when (PackageManager.PERMISSION_GRANTED) {
+                ContextCompat.checkSelfPermission(
+                    it, Manifest.permission.CAMERA
+                ) -> {
+                    successAccessPermission()
+                }
+                else -> {
+                    builder.myActivity?.registerForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { isGranted: Boolean ->
+                        if (isGranted) {
+                            successAccessPermission()
+                        } else {
+                            Toast.makeText(
+                                builder.myActivity,
+                                "Camera Cannot be open because you don't allow permission",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            builder.myErrorListener.invoke(Exception("Camera Cannot be open because you don't allow permission"))
+                        }
+                    }?.launch(
+                        Manifest.permission.CAMERA
                     )
                 }
+            }
+        }
+    }
 
-            try {
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(activity)
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        activity, builder.myCameraSelector, preview, imageAnalyzer
-                    )
-                }, ContextCompat.getMainExecutor(activity))
-            } catch (exc: Exception) {
-                Toast.makeText(
-                    activity, "Failed open camera", Toast.LENGTH_SHORT
-                ).show()
+    private fun showCamera(previewView: PreviewView) {
+        builder.myActivity?.let { activity ->
+            havePermission {
+                val preview = Preview.Builder().build()
+                    .apply { setSurfaceProvider(previewView.surfaceProvider) }
+
+                val cameraExecutor = ContextCompat.getMainExecutor(activity)
+
+                val imageAnalyzer = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build().also {
+                        it.setAnalyzer(
+                            cameraExecutor,
+                            QrCodeAnalyzer(builder.mySuccessListener, builder.myErrorListener)
+                        )
+                    }
+
+                try {
+                    val cameraProviderFuture = ProcessCameraProvider.getInstance(activity)
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            activity, builder.myCameraSelector, preview, imageAnalyzer
+                        )
+                    }, ContextCompat.getMainExecutor(activity))
+                } catch (exc: Exception) {
+                    Toast.makeText(
+                        activity, "Failed open camera", Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
     }
